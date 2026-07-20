@@ -1,0 +1,18 @@
+<!--
+  Wazuh Agent (Ubuntu) - Custom File Integrity Monitoring configuration
+  Added to /var/ossec/etc/ossec.conf on the Ubuntu agent VM
+-->
+
+<syscheck>
+  <disabled>no</disabled>
+  <frequency>43200</frequency>
+  <scan_on_start>yes</scan_on_start>
+
+  <!-- Real-time monitoring enabled on /root to detect file changes immediately,
+       rather than waiting for the scheduled scan interval -->
+  <directories check_all="yes" report_changes="yes" realtime="yes">/root</directories>
+
+  <!-- Default directories also monitored (standard scan, no realtime) -->
+  <directories>/etc,/usr/bin,/usr/sbin</directories>
+  <directories>/bin,/sbin,/boot</directories>
+</syscheck>

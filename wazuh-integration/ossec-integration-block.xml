@@ -1,0 +1,19 @@
+<!--
+  Wazuh Manager - Custom configuration additions for n8n alert enrichment integration
+  These blocks were added/modified in /var/ossec/etc/ossec.conf on the Wazuh Manager
+-->
+
+<!-- Ensures all alerts are logged in JSON format, required for the custom-n8n integration to parse and forward them -->
+<global>
+  <jsonout_output>yes</jsonout_output>
+  <logall>yes</logall>
+  <logall_json>yes</logall_json>
+</global>
+
+<!-- Custom integration: forwards Wazuh alerts (rule level 7+) to the n8n webhook for enrichment -->
+<integration>
+  <name>custom-n8n</name>
+  <hook_url>http://192.168.56.10:5678/webhook/wazuh</hook_url>
+  <level>7</level>
+  <alert_format>json</alert_format>
+</integration>
