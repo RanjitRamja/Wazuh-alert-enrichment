@@ -1,0 +1,350 @@
+{
+  "name": "Wazuh Alert Enrichment Workflow v2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        304
+      ],
+      "id": "eea78cd1-9a35-4918-92d0-9274a2c7d177",
+      "webhookId": "449fa851-9de2-4586-baa9-f692c10f21e8"
+    },
+    {
+      "parameters": {
+        "functionCode": "const raw = items[0].json;\nconst alert = raw.body || raw;\n\nconst ip = alert.agent?.ip \n  || alert.data?.srcip \n  || null;\n\nconst hash = alert.data?.file?.sha256 \n  || alert.syscheck?.sha256_after \n  || null;\n\nconst rule = alert.rule?.description || 'Unknown Rule';\nconst ruleId = alert.rule?.id || 'N/A';\nconst ruleLevel = alert.rule?.level || 0;\nconst agentName = alert.agent?.name || 'Unknown Agent';\nconst timestamp = alert.timestamp || new Date().toISOString();\n\nreturn [{\n  json: {\n    ip,\n    hash,\n    rule,\n    ruleId,\n    ruleLevel,\n    agentName,\n    timestamp,\n    hasHash: hash !== null && hash !== '',\n    hasIp: ip !== null && ip !== '',\n    raw: alert\n  }\n}];"
+      },
+      "name": "Extract IOC",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        304
+      ],
+      "id": "f09fec5f-8d17-4c5b-a0a0-29cd3881409f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"hasHash\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Has Hash?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        304
+      ],
+      "id": "1120916d-3b7b-4f62-84d7-b61b3b2d5c96"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/files/{{$node[\"Extract IOC\"].json[\"hash\"]}}",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-apikey",
+              "value": "=YOUR_VIRUSTOTAL_API_KEY"
+            }
+          ]
+        }
+      },
+      "name": "VirusTotal Hash Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        192
+      ],
+      "id": "6f23523f-8a89-4c02-a885-7c5a389df37f",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/ip_addresses/{{$node[\"Extract IOC\"].json[\"ip\"]}}",
+        "options": {},
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-apikey",
+              "value": "=YOUR_VIRUSTOTAL_API_KEY"
+            }
+          ]
+        }
+      },
+      "name": "VirusTotal IP Lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        448
+      ],
+      "id": "769ff306-ebf8-4e6e-ac0f-e5a742bb6e2d",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "=={{$json[\"isSuspicious\"]}}",
+              "operation": "notEqual"
+            }
+          ]
+        }
+      },
+      "name": "Check Malicious",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -16,
+        304
+      ],
+      "id": "686a9628-dc44-474c-ac36-809825859ce6"
+    },
+    {
+      "parameters": {
+        "fromEmail": "ranjitramja01@gmail.com",
+        "toEmail": "ramjaranjit123@gmail.com",
+        "subject": "=🚨 SECURITY ALERT [Level {{$node[\"Extract IOC\"].json[\"ruleLevel\"]}}]: {{$node[\"Extract IOC\"].json[\"rule\"]}}",
+        "html": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: #0a0a0f; font-family: 'Syne', sans-serif; color: #e2e2e8; }\n  .wrapper { max-width: 640px; margin: 0 auto; padding: 32px 16px; }\n  .header { background: #0f0f1a; border: 1px solid #ff2d2d33; border-radius: 16px 16px 0 0; padding: 36px 40px 28px; position: relative; }\n  .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ff2d2d, #ff6b35, #ff2d2d); }\n  .badge { display: inline-flex; align-items: center; gap: 8px; background: #ff2d2d15; border: 1px solid #ff2d2d44; border-radius: 100px; padding: 6px 16px; margin-bottom: 20px; }\n  .badge-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #ff2d2d; letter-spacing: 2px; text-transform: uppercase; }\n  .header h1 { font-size: 28px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }\n  .header h1 span { color: #ff2d2d; }\n  .header p { font-size: 14px; color: #888; }\n  .body { background: #0d0d18; border-left: 1px solid #ff2d2d22; border-right: 1px solid #ff2d2d22; padding: 32px 40px; }\n  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: #ff2d2d; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }\n  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }\n  .info-card { background: #111120; border: 1px solid #ffffff0d; border-radius: 10px; padding: 16px; }\n  .info-card.full { grid-column: 1 / -1; }\n  .info-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }\n  .info-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #e2e2e8; font-weight: 600; word-break: break-all; }\n  .info-value.danger { color: #ff2d2d; }\n  .info-value.warning { color: #ff6b35; }\n  .action-box { background: #ff2d2d0a; border: 1px solid #ff2d2d22; border-radius: 10px; padding: 20px; margin-bottom: 28px; }\n  .action-box h3 { font-size: 14px; font-weight: 700; color: #ff6b35; margin-bottom: 10px; }\n  .action-list { list-style: none; }\n  .action-list li { font-size: 13px; color: #888; padding: 5px 0 5px 16px; position: relative; }\n  .action-list li::before { content: '→'; position: absolute; left: 0; color: #ff2d2d; font-weight: 700; }\n  .footer { background: #0a0a0f; border: 1px solid #ffffff08; border-top: none; border-radius: 0 0 16px 16px; padding: 24px 40px; text-align: center; }\n  .footer p { font-size: 12px; color: #444; line-height: 1.6; }\n  .footer .mono { font-family: 'JetBrains Mono', monospace; color: #333; font-size: 10px; margin-top: 8px; }\n</style>\n</head>\n<body>\n<div class=\"wrapper\">\n  <div class=\"header\">\n    <div class=\"badge\"><span class=\"badge-text\">● Critical Threat Detected</span></div>\n    <h1>Security <span>Alert</span> Triggered</h1>\n    <p>Wazuh has detected malicious activity on your network</p>\n  </div>\n  <div class=\"body\">\n    <div class=\"section-label\">Incident Details</div>\n    <div class=\"info-grid\">\n      <div class=\"info-card\">\n        <div class=\"info-label\">Agent Name</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"agentName\"]}}</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Rule Level</div>\n        <div class=\"info-value danger\">={{$node[\"Extract IOC\"].json[\"ruleLevel\"]}} / 15</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Source IP</div>\n        <div class=\"info-value warning\">={{$node[\"Extract IOC\"].json[\"ip\"]}}</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Rule ID</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"ruleId\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">Rule Description</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"rule\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">File Hash (SHA256)</div>\n        <div class=\"info-value warning\">={{$node[\"Extract IOC\"].json[\"hash\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">Timestamp</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"timestamp\"]}}</div>\n      </div>\n    </div>\n    <div class=\"action-box\">\n      <h3>Recommended Actions</h3>\n      <ul class=\"action-list\">\n        <li>Isolate the affected agent immediately</li>\n        <li>Block the source IP at the firewall</li>\n        <li>Review recent login attempts and file changes</li>\n        <li>Run a full malware scan on the affected system</li>\n        <li>Preserve system logs for forensic analysis</li>\n      </ul>\n    </div>\n  </div>\n  <div class=\"footer\">\n    <p>This alert was automatically generated by your Wazuh + n8n security pipeline.<br>Do not ignore this message — immediate action may be required.</p>\n    <div class=\"mono\">WAZUH ALERT ENRICHMENT SYSTEM · AUTOMATED SECURITY NOTIFICATION</div>\n  </div>\n</div>\n</body>\n</html>",
+        "options": {
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        288
+      ],
+      "id": "b5173546-11b1-4cb7-9b54-524fdaf3eaca",
+      "name": "Send Alert Email",
+      "webhookId": "e2849eeb-bc62-4912-82e4-60bc0435ba15",
+      "credentials": {
+        "smtp": {
+          "id": "tPzUMkkSv10ndC6B",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "ranjitramja01@gmail.com",
+        "toEmail": "ramjaranjit123@gmail.com",
+        "subject": "=ℹ️ Wazuh Alert (No Threat Detected): {{$node[\"Extract IOC\"].json[\"rule\"]}}",
+        "html": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { background: #f0f4f0; font-family: 'Syne', sans-serif; color: #1a2a1a; }\n  .wrapper { max-width: 640px; margin: 0 auto; padding: 32px 16px; }\n  .header { background: #0d1f0d; border-radius: 16px 16px 0 0; padding: 36px 40px 28px; position: relative; }\n  .header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00c853, #69f0ae, #00c853); }\n  .badge { display: inline-flex; align-items: center; gap: 8px; background: #00c85315; border: 1px solid #00c85344; border-radius: 100px; padding: 6px 16px; margin-bottom: 20px; }\n  .badge-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: #00c853; letter-spacing: 2px; text-transform: uppercase; }\n  .header h1 { font-size: 28px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }\n  .header h1 span { color: #00c853; }\n  .header p { font-size: 14px; color: #4a7a4a; }\n  .body { background: #ffffff; border-left: 1px solid #e0ece0; border-right: 1px solid #e0ece0; padding: 32px 40px; }\n  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: #00a846; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }\n  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }\n  .info-card { background: #f8fbf8; border: 1px solid #e0ece0; border-radius: 10px; padding: 16px; }\n  .info-card.full { grid-column: 1 / -1; }\n  .info-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #9ab09a; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }\n  .info-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #1a2a1a; font-weight: 600; word-break: break-all; }\n  .info-value.safe { color: #00a846; }\n  .safe-box { background: #f0fbf4; border: 1px solid #00c85322; border-radius: 10px; padding: 20px; margin-bottom: 28px; }\n  .safe-box h3 { font-size: 14px; font-weight: 700; color: #00a846; margin-bottom: 10px; }\n  .safe-list { list-style: none; }\n  .safe-list li { font-size: 13px; color: #6a8a6a; padding: 5px 0 5px 16px; position: relative; }\n  .safe-list li::before { content: '✓'; position: absolute; left: 0; color: #00c853; font-weight: 700; }\n  .summary-box { background: #f8fbf8; border: 1px solid #e0ece0; border-radius: 10px; padding: 20px; margin-bottom: 28px; }\n  .summary-box p { font-size: 13px; color: #6a8a6a; line-height: 1.7; }\n  .footer { background: #0d1f0d; border-radius: 0 0 16px 16px; padding: 24px 40px; text-align: center; }\n  .footer p { font-size: 12px; color: #3a5a3a; line-height: 1.6; }\n  .footer .mono { font-family: 'JetBrains Mono', monospace; color: #2a4a2a; font-size: 10px; margin-top: 8px; }\n</style>\n</head>\n<body>\n<div class=\"wrapper\">\n  <div class=\"header\">\n    <div class=\"badge\"><span class=\"badge-text\">● No Threat Detected</span></div>\n    <h1>System <span>Clear</span> Notice</h1>\n    <p>Wazuh alert processed — no malicious indicators found</p>\n  </div>\n  <div class=\"body\">\n    <div class=\"section-label\">Incident Details</div>\n    <div class=\"info-grid\">\n      <div class=\"info-card\">\n        <div class=\"info-label\">Agent Name</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"agentName\"]}}</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Rule Level</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"ruleLevel\"]}} / 15</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Source IP</div>\n        <div class=\"info-value safe\">={{$node[\"Extract IOC\"].json[\"ip\"]}}</div>\n      </div>\n      <div class=\"info-card\">\n        <div class=\"info-label\">Rule ID</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"ruleId\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">Rule Description</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"rule\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">File Hash (SHA256)</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"hash\"]}}</div>\n      </div>\n      <div class=\"info-card full\">\n        <div class=\"info-label\">Timestamp</div>\n        <div class=\"info-value\">={{$node[\"Extract IOC\"].json[\"timestamp\"]}}</div>\n      </div>\n    </div>\n    <div class=\"safe-box\">\n      <h3>Verification Summary</h3>\n      <ul class=\"safe-list\">\n        <li>File hash checked against VirusTotal database</li>\n        <li>IP address reputation verified as clean</li>\n        <li>No known malware signatures matched</li>\n        <li>Alert logged for audit trail purposes</li>\n      </ul>\n    </div>\n    <div class=\"summary-box\">\n      <p>This alert was triggered by Wazuh rule <strong>={{$node[\"Extract IOC\"].json[\"ruleId\"]}}</strong> on agent <strong>={{$node[\"Extract IOC\"].json[\"agentName\"]}}</strong>. After enrichment via VirusTotal API, no malicious indicators were found. No immediate action is required.</p>\n    </div>\n  </div>\n  <div class=\"footer\">\n    <p>This notice was automatically generated by your Wazuh + n8n security pipeline.<br>No action is required at this time.</p>\n    <div class=\"mono\">WAZUH ALERT ENRICHMENT SYSTEM · AUTOMATED SECURITY NOTIFICATION</div>\n  </div>\n</div>\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        480
+      ],
+      "id": "7c879431-a7d6-4541-a97a-e1e0ce637d73",
+      "name": "Send Clean Email",
+      "webhookId": "4d0f5db7-cb7d-4dcc-acaa-ec5df9f87ecc",
+      "credentials": {
+        "smtp": {
+          "id": "tPzUMkkSv10ndC6B",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5f476a03-b96f-4ea1-be19-83dfcb73082a",
+              "leftValue": "=Value 1:  ={{$json[\"hasIp\"]}}\nOperation: is true",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -656,
+        464
+      ],
+      "id": "1c8cb55b-2f08-405d-9a18-882af2e39e85",
+      "name": "Has IP?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json;\n\nconst maliciousScore = \n  data?.data?.attributes?.last_analysis_stats?.malicious ?? 0;\n\nconst ruleLevel = data?.ruleLevel || \n  $node[\"Extract IOC\"].json[\"ruleLevel\"] || 0;\n\n// Flag as suspicious if VT score > 0 OR rule level is critical\nconst isSuspicious = maliciousScore > 0 || ruleLevel >= 10;\n\nreturn [{\n  json: {\n    ...data,\n    maliciousScore: maliciousScore,\n    ruleLevel: ruleLevel,\n    isSuspicious: isSuspicious,\n    detectionMethod: maliciousScore > 0 ? 'VirusTotal' : \n                     ruleLevel >= 10 ? 'Wazuh Rule Level' : 'None'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        304
+      ],
+      "id": "a322601a-837b-486c-8bc2-c833fb88579c",
+      "name": "Get Score"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract IOC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract IOC": {
+      "main": [
+        [
+          {
+            "node": "Has Hash?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has IP?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Hash?": {
+      "main": [
+        [
+          {
+            "node": "VirusTotal Hash Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "VirusTotal Hash Lookup": {
+      "main": [
+        [
+          {
+            "node": "Get Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VirusTotal IP Lookup": {
+      "main": [
+        [
+          {
+            "node": "Get Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Malicious": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Clean Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has IP?": {
+      "main": [
+        [
+          {
+            "node": "VirusTotal IP Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Score": {
+      "main": [
+        [
+          {
+            "node": "Check Malicious",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "85e63baf-92ea-41fd-ada2-65f77ac32e7f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd8e6c6883bbbbce433825e325db09a964edd2dfd406baa8c358869955148234"
+  },
+  "id": "qKfSpLz6Yz6b6QYK",
+  "tags": []
+}
