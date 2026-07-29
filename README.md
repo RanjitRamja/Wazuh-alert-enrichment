@@ -46,7 +46,14 @@ The result: alerts are automatically enriched with threat context, and a suspici
                                                                  ┌─────────────────┐
                                                                  │   Get Score     │
                                                                  │ (suspicion calc)│
-                                                                 └─────────────────┘
+                                                                 └────────┬────────┘
+                                                                          │
+                                                       ┌──────────────────┴──────────────────┐
+                                                       ▼                                     ▼
+                                              ┌─────────────────┐                 ┌─────────────────┐
+                                              │ Send Alert Email │                │ Send Clean Email │
+                                              │  (malicious)     │                │  (clean/no threat)│
+                                              └─────────────────┘                └─────────────────┘
 ```
 
 **Lab environment:** 4 virtual machines on Oracle VirtualBox, communicating over a host-only network (`192.168.56.0/24`):
@@ -88,6 +95,13 @@ The `Get Score` function node combines:
 
 An alert is flagged `isSuspicious: true` if **either** the VirusTotal malicious score is greater than zero **or** the Wazuh rule level is 10+ — ensuring high-severity Wazuh alerts are still flagged even if the IOC isn't yet indexed in VirusTotal's database.
 
+### 6. Analyst notification (email)
+Based on the suspicion score, the workflow branches to one of two email notifications:
+- **Send Alert Email** — a red-themed HTML alert sent when malicious indicators are found, including agent name, rule level, source IP, file hash, and a recommended-actions checklist (isolate the agent, block the IP, run a malware scan, etc.)
+- **Send Clean Email** — a green-themed notice sent when the IOC checks out clean, confirming the alert was reviewed and enriched with no action needed
+
+This closes the loop from raw alert → enrichment → a human-readable notification an analyst can act on immediately.
+
 ---
 
 ## Testing & validation
@@ -107,9 +121,9 @@ The pipeline was validated using controlled attack simulations:
 
 | | |
 |---|---|
-| ![Wazuh Dashboard](screenshots/wazuh-dashboard.png) *Wazuh Dashboard login* | ![FIM Config](screenshots/fim-configuration.png) *File Integrity Monitoring configuration* |
-| ![SSH Brute-force Detection](screenshots/ssh-bruteforce-threat-hunting.png) *SSH brute-force alerts in Threat Hunting view* | ![VirusTotal Lookup](screenshots/virustotal-hash-lookup.png) *VirusTotal hash reputation lookup* |
-| ![n8n Score Node](screenshots/n8n-get-score-node.png) *n8n suspicion scoring output* | |
+| ![Wazuh Dashboard](screenshots/01-wazuh-dashboard.png) *Wazuh Dashboard login* | ![FIM Config](screenshots/05-fim-configuration.png) *File Integrity Monitoring configuration* |
+| ![SSH Brute-force Detection](screenshots/02-ssh-bruteforce-threat-hunting.png) *SSH brute-force alerts in Threat Hunting view* | ![VirusTotal Lookup](screenshots/03-virustotal-hash-lookup.png) *VirusTotal hash reputation lookup* |
+| ![n8n Score Node](screenshots/04-n8n-get-score-node.png) *n8n suspicion scoring output* | |
 
 ---
 
@@ -126,11 +140,11 @@ wazuh-alert-enrichment/
 │   ├── ubuntu-agent-fim-config.xml
 │   └── windows-agent-fim-config.xml
 └── screenshots/
-    ├── wazuh-dashboard.png
-    ├── ssh-bruteforce-threat-hunting.png
-    ├── virustotal-hash-lookup.png
-    ├── n8n-get-score-node.png
-    └── fim-configuration.png
+    ├── 01-wazuh-dashboard.png
+    ├── 02-ssh-bruteforce-threat-hunting.png
+    ├── 03-virustotal-hash-lookup.png
+    ├── 04-n8n-get-score-node.png
+    └── 05-fim-configuration.png
 ```
 
 ---
@@ -164,4 +178,5 @@ wazuh-alert-enrichment/
 ## Author
 
 **Ranjit Ramja**
+Networking & IT Security Graduate | Fortinet Certified in Cybersecurity
 [LinkedIn](https://www.linkedin.com/in/ranjit-ramja-37951a353/) · [TryHackMe](https://tryhackme.com/p/Ranjit07)
