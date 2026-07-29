@@ -140,11 +140,11 @@ wazuh-alert-enrichment/
 │   ├── ubuntu-agent-fim-config.xml
 │   └── windows-agent-fim-config.xml
 └── screenshots/
-    ├── 01-wazuh-dashboard.png
-    ├── 02-ssh-bruteforce-threat-hunting.png
-    ├── 03-virustotal-hash-lookup.png
-    ├── 04-n8n-get-score-node.png
-    └── 05-fim-configuration.png
+    ├── wazuh-dashboard.png
+    ├── ssh-bruteforce-threat-hunting.png
+    ├── virustotal-hash-lookup.png
+    ├── n8n-get-score-node.png
+    └── fim-configuration.png
 ```
 
 ---
@@ -178,5 +178,4 @@ wazuh-alert-enrichment/
 ## Author
 
 **Ranjit Ramja**
-Networking & IT Security Graduate | Fortinet Certified in Cybersecurity
 [LinkedIn](https://www.linkedin.com/in/ranjit-ramja-37951a353/) · [TryHackMe](https://tryhackme.com/p/Ranjit07)
