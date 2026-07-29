@@ -123,7 +123,8 @@ The pipeline was validated using controlled attack simulations:
 |---|---|
 | ![Wazuh Dashboard](screenshots/wazuh-dashboard.png) *Wazuh Dashboard login* | ![FIM Config](screenshots/fim-configuration.png) *File Integrity Monitoring configuration* |
 | ![SSH Brute-force Detection](screenshots/ssh-bruteforce-threat-hunting.png) *SSH brute-force alerts in Threat Hunting view* | ![VirusTotal Lookup](screenshots/virustotal-hash-lookup.png) *VirusTotal hash reputation lookup* |
-| ![n8n Score Node](screenshots/n8n-get-score-node.png) *n8n suspicion scoring output* | |
+| ![n8n Score Node](screenshots/n8n-get-score-node.png) *n8n suspicion scoring output* | ![Alert Email](screenshots/alert-email-notification.png) *Alert email notification (incident details)* |
+| ![Alert Email Actions](screenshots/alert-email-recommended-actions.png) *Alert email recommended-actions section* | |
 
 ---
 
@@ -144,7 +145,9 @@ wazuh-alert-enrichment/
     ├── ssh-bruteforce-threat-hunting.png
     ├── virustotal-hash-lookup.png
     ├── n8n-get-score-node.png
-    └── fim-configuration.png
+    ├── fim-configuration.png
+    ├── alert-email-notification.png
+    └── alert-email-recommended-actions.png
 ```
 
 ---
@@ -171,7 +174,8 @@ wazuh-alert-enrichment/
 5. Place `custom-n8n.sh` at `/var/ossec/integrations/custom-n8n` and make it executable (`chmod +x`)
 6. Import `n8n-workflow/Wazuh_Alert_Enrichment_Workflow.json` into your n8n instance
 7. Replace `YOUR_VIRUSTOTAL_API_KEY` in the workflow with your own VirusTotal API key (get one free at [virustotal.com](https://www.virustotal.com))
-8. Activate the webhook and trigger a test alert
+8. Replace `your-sender-email@gmail.com`, `your-alert-recipient@gmail.com`, and `YOUR_SMTP_CREDENTIAL_ID` with your own email addresses and n8n SMTP credential
+9. Activate the webhook and trigger a test alert
 
 ---
 
