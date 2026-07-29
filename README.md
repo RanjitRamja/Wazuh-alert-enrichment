@@ -1,6 +1,6 @@
 # Automated SIEM Alert Enrichment — Wazuh + n8n + VirusTotal
 
-Automated pipeline that enriches Wazuh SIEM alerts in real time using n8n workflow automation and the VirusTotal threat intelligence API — reducing manual triage effort by automatically flagging genuinely suspicious activity based on combined rule severity and threat intelligence scoring.
+Automated pipeline that enriches Wazuh SIEM alerts in real time using n8n workflow automation and the VirusTotal threat intelligence API; reducing manual triage effort by automatically flagging genuinely suspicious activity based on combined rule severity and threat intelligence scoring.
 
 ![Wazuh](https://img.shields.io/badge/SIEM-Wazuh-1e5f8a) ![n8n](https://img.shields.io/badge/Automation-n8n-ea4b71) ![VirusTotal](https://img.shields.io/badge/Threat%20Intel-VirusTotal-394eff)
 
@@ -69,7 +69,7 @@ The result: alerts are automatically enriched with threat context, and a suspici
 ### 1. Alert generation (Wazuh)
 - Wazuh Manager and Agents deployed across Ubuntu and Windows VMs
 - File Integrity Monitoring (FIM) enabled with real-time detection on both agents (`/root` on Ubuntu, `C:\test-fim` on Windows)
-- `logall` and `logall_json` enabled on the Manager so all alerts are written to the JSON alert log — required for the integration script to consume them
+- `logall` and `logall_json` enabled on the Manager so all alerts are written to the JSON alert log required for the integration script to consume them
 
 ### 2. Alert forwarding (Wazuh → n8n)
 A custom Wazuh integration script (`wazuh-integration/custom-n8n.sh`) is registered in `ossec.conf` and triggered automatically for any alert at or above rule level 7. It forwards the alert JSON via `curl` to the n8n production webhook.
@@ -93,7 +93,7 @@ The `Get Score` function node combines:
 - VirusTotal's `malicious` detection count (from `last_analysis_stats`)
 - Wazuh's native rule severity level
 
-An alert is flagged `isSuspicious: true` if **either** the VirusTotal malicious score is greater than zero **or** the Wazuh rule level is 10+ — ensuring high-severity Wazuh alerts are still flagged even if the IOC isn't yet indexed in VirusTotal's database.
+An alert is flagged `isSuspicious: true` if **either** the VirusTotal malicious score is greater than zero **or** the Wazuh rule level is 10+ ensuring high-severity Wazuh alerts are still flagged even if the IOC isn't yet indexed in VirusTotal's database.
 
 ### 6. Analyst notification (email)
 Based on the suspicion score, the workflow branches to one of two email notifications:
