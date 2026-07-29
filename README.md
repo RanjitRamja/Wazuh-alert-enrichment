@@ -121,9 +121,9 @@ The pipeline was validated using controlled attack simulations:
 
 | | |
 |---|---|
-| ![Wazuh Dashboard](screenshots/01-wazuh-dashboard.png) *Wazuh Dashboard login* | ![FIM Config](screenshots/05-fim-configuration.png) *File Integrity Monitoring configuration* |
-| ![SSH Brute-force Detection](screenshots/02-ssh-bruteforce-threat-hunting.png) *SSH brute-force alerts in Threat Hunting view* | ![VirusTotal Lookup](screenshots/03-virustotal-hash-lookup.png) *VirusTotal hash reputation lookup* |
-| ![n8n Score Node](screenshots/04-n8n-get-score-node.png) *n8n suspicion scoring output* | |
+| ![Wazuh Dashboard](screenshots/wazuh-dashboard.png) *Wazuh Dashboard login* | ![FIM Config](screenshots/fim-configuration.png) *File Integrity Monitoring configuration* |
+| ![SSH Brute-force Detection](screenshots/ssh-bruteforce-threat-hunting.png) *SSH brute-force alerts in Threat Hunting view* | ![VirusTotal Lookup](screenshots/virustotal-hash-lookup.png) *VirusTotal hash reputation lookup* |
+| ![n8n Score Node](screenshots/n8n-get-score-node.png) *n8n suspicion scoring output* | |
 
 ---
 
